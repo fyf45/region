@@ -4,7 +4,7 @@
  * @Autor: fyf
  * @Date: 2021-09-29 18:04:57
  * @LastEditors: fyf
- * @LastEditTime: 2022-03-17 20:59:25
+ * @LastEditTime: 2022-03-18 18:41:13
 -->
 <template>
     <div class="region-container">
@@ -15,13 +15,13 @@
                     <Icon type="ios-close" class="region-info-icon" v-if="!disabled" @click="handleRemoveChecked(item,index)" />
                 </div>
             </div>
-            <Button class="btn" @click="handleReset">重置</Button>
+            <Button class="btn" @click="handleReset" v-if="!disabled">重置</Button>
         </div>
         <div class="region-content">
             <region-list :disabled="disabled" :listData="provinceList" v-if="provinceList && provinceList.length" type="province" @next="getNext" @checked="handleChecked"></region-list>
-            <region-list :disabled="disabled" :listData="cityList" v-if="cityList && cityList.length" type="city" @next="getNext" @checked="handleChecked"></region-list>
-            <region-list :disabled="disabled" :listData="areaList" v-if="areaList && areaList.length" type="area" @next="getNext" @checked="handleChecked"></region-list>
-            <region-list :disabled="disabled" :listData="townList" v-if="townList && townList.length" type="town" @next="getNext" @checked="handleChecked"></region-list>
+            <region-list :disabled="disabled" :listData="cityList" v-if="city && cityList && cityList.length" type="city" @next="getNext" @checked="handleChecked"></region-list>
+            <region-list :disabled="disabled" :listData="areaList" v-if="city && area && areaList && areaList.length" type="area" @next="getNext" @checked="handleChecked"></region-list>
+            <region-list :disabled="disabled" :listData="townList" v-if="city && area && town && townList && townList.length" type="town" @next="getNext" @checked="handleChecked"></region-list>
         </div>
     </div>
 </template>
@@ -41,6 +41,18 @@ export default {
             type: Array,
             default: () => []
         },
+        city: {
+            type: Boolean,
+            default: () => true
+        },
+        area: {
+            type: Boolean,
+            default: () => true
+        },
+        town: {
+            type: Boolean,
+            default: () => true
+        },
         disabled: {
             type: Boolean,
             default: () => false
@@ -53,7 +65,8 @@ export default {
             areaList: [],
             townList: [],
             indexList: [],
-            regionData: [] // 选中节点
+            regionData: [], // 选中节点
+            srcProvince: JSON.parse(JSON.stringify(srcProvince))
         }
     },
     watch: {
@@ -68,7 +81,7 @@ export default {
     },
     methods: {
         initData() {
-            this.provinceList = this.handleInitData(null, srcProvince, 'province', loadCity);
+            this.provinceList = this.handleInitData(null, this.srcProvince, 'province', loadCity);
         },
         getNext(data) {
             let { type } = data;
@@ -94,53 +107,53 @@ export default {
             data.map(item => {
                 // 初始化省信息
                 if (type == 'province') {
-                    item['isChildren'] = func(item).length ? true : false;
+                    this.$set(item, 'isChildren', this.city && func(item).length ? true : false);
                     let records = this.regionData.filter(res => res.key.includes(item.key));
                     if (!records.length) {
-                        item['checked'] = false;
-                        item['indeterminate'] = false;
+                        this.$set(item, 'checked', false);
+                        this.$set(item, 'indeterminate', false);
                     } else {
                         records.map(keys => {
                             let keyData = keys.key.split('-');
                             let keyLen = keyData.length;
                             if (keyLen == 1) {
                                 if (item.key == keyData[0]) {
-                                    item['checked'] = true;
-                                    item['indeterminate'] = false;
+                                    this.$set(item, 'checked', true);
+                                    this.$set(item, 'indeterminate', false);
                                 }
                             } else {
                                 if (item.key == keyData[0]) {
-                                    item['checked'] = false;
-                                    item['indeterminate'] = true;
+                                    this.$set(item, 'checked', false);
+                                    this.$set(item, 'indeterminate', true);
                                 }
                             }
                         })
                     }
                     // 初始化 市信息
                 } else if (type == 'city') {
-                    item['isChildren'] = func(item).length ? true : false;
+                    this.$set(item, 'isChildren', this.city && this.area && func(item).length ? true : false);
                     if (parentData.checked) {
-                        item['checked'] = true;
-                        item['indeterminate'] = false;
+                        this.$set(item, 'checked', true);
+                        this.$set(item, 'indeterminate', false);
                     } else {
                         let records = this.regionData.filter(res => res.key.includes(item.key));
 
                         if (!records.length) {
-                            item['checked'] = false;
-                            item['indeterminate'] = false;
+                            this.$set(item, 'checked', false);
+                            this.$set(item, 'indeterminate', false);
                         } else {
                             records.map(keys => {
                                 let keyData = keys.key.split('-');
                                 let keyLen = keyData.length;
                                 if (keyLen == 2) {
                                     if (item.key == keyData[1]) {
-                                        item['checked'] = true;
-                                        item['indeterminate'] = false;
+                                        this.$set(item, 'checked', true);
+                                        this.$set(item, 'indeterminate', false);
                                     }
                                 } else {
                                     if (item.key == keyData[1]) {
-                                        item['checked'] = false;
-                                        item['indeterminate'] = true;
+                                        this.$set(item, 'checked', false);
+                                        this.$set(item, 'indeterminate', true);
                                     }
                                 }
                             })
@@ -149,28 +162,28 @@ export default {
 
                     // 初始化 区信息
                 } else if (type == 'area') {
-                    item['isChildren'] = func(item).length ? true : false;
+                    this.$set(item, 'isChildren', this.city && this.area && this.town && func(item).length ? true : false);
                     if (parentData.checked) {
-                        item['checked'] = true;
-                        item['indeterminate'] = false;
+                        this.$set(item, 'checked', true);
+                        this.$set(item, 'indeterminate', false);
                     } else {
                         let records = this.regionData.filter(res => res.key.includes(item.key));
                         if (!records.length) {
-                            item['checked'] = false;
-                            item['indeterminate'] = false;
+                            this.$set(item, 'checked', false);
+                            this.$set(item, 'indeterminate', false);
                         } else {
                             records.map(keys => {
                                 let keyData = keys.key.split('-');
                                 let keyLen = keyData.length;
                                 if (keyLen == 3) {
                                     if (item.key == keyData[2]) {
-                                        item['checked'] = true;
-                                        item['indeterminate'] = false;
+                                        this.$set(item, 'checked', true);
+                                        this.$set(item, 'indeterminate', false);
                                     }
                                 } else {
                                     if (item.key == keyData[2]) {
-                                        item['checked'] = false;
-                                        item['indeterminate'] = true;
+                                        this.$set(item, 'checked', false);
+                                        this.$set(item, 'indeterminate', true);
                                     }
                                 }
                             })
@@ -180,13 +193,13 @@ export default {
                 } else if (type == 'town') {
                     item['isChildren'] = false;
                     if (parentData.checked) {
-                        item['checked'] = true;
-                        item['indeterminate'] = false;
+                        this.$set(item, 'checked', true);
+                        this.$set(item, 'indeterminate', false);
                     } else {
                         let records = this.regionData.filter(res => res.key.includes(item.key));
                         if (!records.length) {
-                            item['checked'] = false;
-                            item['indeterminate'] = false;
+                            this.$set(item, 'checked', false);
+                            this.$set(item, 'indeterminate', false);
                         } else {
                             records.map(keys => {
                                 let keyData = keys.key.split('-');
@@ -194,8 +207,8 @@ export default {
                                 let townKey = item.key + "000";
                                 if (keyLen == 4) {
                                     if (townKey == keyData[3]) {
-                                        item['checked'] = true;
-                                        item['indeterminate'] = false;
+                                        this.$set(item, 'checked', true);
+                                        this.$set(item, 'indeterminate', false);
                                     }
                                 }
                             })
@@ -205,7 +218,6 @@ export default {
             })
             return data;
         },
-
         handleChecked(data) {
             let { type, checked, key, value } = data;
             let [provinceIndex, cityIndex, areaIndex] = this.indexList;
@@ -443,7 +455,7 @@ export default {
                                 this.regionData.unshift({ key: mixinsKey, value: mixinsValue })
                             }
                         } else {
-                            if(this.handleIsAddNode(mixinsKey)) {
+                            if (this.handleIsAddNode(mixinsKey)) {
                                 this.handleRemoveSonNode(mixinsKey, false);
                             }
                         }
@@ -651,7 +663,6 @@ export default {
         display: inline-block;
         border: 1px solid #e4e7ed;
         border-radius: 4px;
-        padding: 4px 8px;
         margin: 2px 4px;
         cursor: pointer;
         display: flex;
@@ -661,7 +672,7 @@ export default {
             display: inline-block;
         }
         .region-info-icon {
-            padding: 6px;
+            padding: 2px;
             font-size: 20px;
         }
         &:hover {
